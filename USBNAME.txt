@@ -1,0 +1,71 @@
+To change USB Name in arduino, the boards.txt needs to be edited.
+
+After installing adafruit SAMD board library, edit:
+
+C:\Users\USERNAME\AppData\Local\Arduino15\packages\adafruit\hardware\samd\1.7.16\boards.txt
+
+Add the following block anywhere (top is easiest), then to get Arduino IDE to propagate changes, clear this folder:
+C:\Users\USERNAME\AppData\Roaming\arduino-ide
+
+This will create a new entry for Fade 4 in Arduino.
+
+# -----------------------------------
+# FADE 4 | Adafruit Feather M0 (SAMD21)
+# -----------------------------------
+adafruit_fade_4.name=Adafruit Fade 4 (SAMD21)
+
+# VID/PID for Bootloader, Arduino & CircuitPython
+adafruit_fade_4.vid.0=0x239A
+adafruit_fade_4.pid.0=0x800B
+adafruit_fade_4.vid.1=0x239A
+adafruit_fade_4.pid.1=0x000B
+adafruit_fade_4.vid.2=0x239A
+adafruit_fade_4.pid.2=0x0015
+
+# Upload
+adafruit_fade_4.upload.tool=bossac18
+adafruit_fade_4.upload.protocol=sam-ba
+adafruit_fade_4.upload.maximum_size=262144
+adafruit_fade_4.upload.offset=0x2000
+adafruit_fade_4.upload.use_1200bps_touch=true
+adafruit_fade_4.upload.wait_for_upload_port=true
+adafruit_fade_4.upload.native_usb=true
+
+# Build
+adafruit_fade_4.build.mcu=cortex-m0plus
+adafruit_fade_4.build.f_cpu=48000000L
+adafruit_fade_4.build.usb_product="Fade 4"
+adafruit_fade_4.build.usb_manufacturer="CCTV"
+adafruit_fade_4.build.board=SAMD_ZERO
+adafruit_fade_4.build.core=arduino
+adafruit_fade_4.build.extra_flags=-D__SAMD21G18A__ -DADAFRUIT_FEATHER_M0 -DARDUINO_SAMD_ZERO -DARM_MATH_CM0PLUS {build.usb_flags}
+adafruit_fade_4.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
+adafruit_fade_4.build.openocdscript=scripts/openocd/daplink_samd21.cfg
+adafruit_fade_4.build.variant=feather_m0
+adafruit_fade_4.build.variant_system_lib=
+adafruit_fade_4.build.vid=0x239A
+adafruit_fade_4.build.pid=0x800B
+adafruit_fade_4.bootloader.tool=openocd
+adafruit_fade_4.bootloader.file=featherM0/bootloader-feather_m0-v2.0.0-adafruit.5.bin
+
+# Menu: Optimization
+adafruit_fade_4.menu.opt.small=Small (-Os) (standard)
+adafruit_fade_4.menu.opt.small.build.flags.optimize=-Os
+adafruit_fade_4.menu.opt.fast=Fast (-O2)
+adafruit_fade_4.menu.opt.fast.build.flags.optimize=-O2
+adafruit_fade_4.menu.opt.faster=Faster (-O3)
+adafruit_fade_4.menu.opt.faster.build.flags.optimize=-O3
+adafruit_fade_4.menu.opt.fastest=Fastest (-Ofast)
+adafruit_fade_4.menu.opt.fastest.build.flags.optimize=-Ofast
+adafruit_fade_4.menu.opt.dragons=Here be dragons (-Ofast -funroll-loops)
+adafruit_fade_4.menu.opt.dragons.build.flags.optimize=-Ofast -funroll-loops
+
+# Menu: USB Stack
+adafruit_fade_4.menu.usbstack.arduino=Arduino
+adafruit_fade_4.menu.usbstack.tinyusb=TinyUSB
+adafruit_fade_4.menu.usbstack.tinyusb.build.flags.usbstack=-DUSE_TINYUSB
+
+# Menu: Debug
+adafruit_fade_4.menu.debug.off=Off
+adafruit_fade_4.menu.debug.on=On
+adafruit_fade_4.menu.debug.on.build.flags.debug=-g
