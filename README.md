@@ -47,3 +47,5 @@ All firmware updates can be done over the USB C port. The 4 pin header is just f
 *April 17 2023:* Bug fix, channels via TRS do not match channels via USB. Due to USB library counting channels from 0 and MIDI library counting from 1.
 
 *May 8 2024:* Chris found a bug causing Program Changes to not function at all on V12, added bounds checking to message types.
+
+*August  30 2024* Dominic found a bug with pitch bend and program changes, implemented more robust scaling for pitch bend. Release in fade4v14.UF2
