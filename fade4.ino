@@ -495,7 +495,7 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
   else if(message == 128) //Pitch Bend
   { //wide range, 14 bit?
     int pbval;
-    pbval = data<<4;
+    pbval = data;
 
     if(firstbootread[lane])
     {
@@ -505,8 +505,18 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
     if(pbval!=lastdata[lane])
     {
       lastdata[lane]=pbval;
-      midiEventPacket_t event = {0x0E, (uint8_t)(0xE0 | channel), (uint8_t)(data>>8), (uint8_t)data};
-      pbval = pbval - 8192;
+      
+      //maps pitch bend to -2047 to 2047
+      pbval = map(pbval,0,MAXPOTVALUE,-2047,2047); // - 2047 to +2047
+      unsigned int usbpb = 8192; //8192 = no pitch bend = 0
+      //usb packet needs slightly different format.
+      usbpb = usbpb + pbval; 
+
+      int shiftedValue = usbpb << 1;        // shift so top bit of lsb is in msb
+      byte msb = highByte(shiftedValue);        // get the high bits
+      byte lsb = lowByte(shiftedValue) >> 1;    // get the low 7 bits and shift right
+      midiEventPacket_t event = {0x0E, (uint8_t)(0xE0 | channel), lsb, msb};
+      //pbval = pbval - 8192;
   
       
       MIDI.sendPitchBend(pbval, channel+1);
