@@ -54,6 +54,17 @@ unsigned int currentbrightness = 60;
 
 unsigned long int lastLEDUpdate = 0;
 
+// Heart of <<Extra Messages>> // faderPage allows the midi messages of the faders to be stored in "pages"
+// These pages can be scrolled through by tapping the left and right button.
+// Message Button - Decrements page // Channel Button - Increment page
+// Pages are:
+// 1: 1 2 3 4
+// 2: 5 6 7 8
+// 3: A B C D
+// 4: E F G H
+unsigned int faderPage = 0;
+#define MAX_FADER_PAGE 4
+
 #define SMOOTHNESS 0.004
 
 ResponsiveAnalogRead analogPOTS[4] = {
@@ -70,6 +81,22 @@ FlashStorage(saved_message1,unsigned char);
 FlashStorage(saved_message2,unsigned char);
 FlashStorage(saved_message3,unsigned char);
 FlashStorage(saved_message4,unsigned char);
+
+// Extra Messages - Create storage for faderPage + 12 additional messages
+FlashStorage(saved_fader_page,unsigned char);
+
+FlashStorage(saved_message5,unsigned char);
+FlashStorage(saved_message6,unsigned char);
+FlashStorage(saved_message7,unsigned char);
+FlashStorage(saved_message8,unsigned char);
+FlashStorage(saved_messageA,unsigned char);
+FlashStorage(saved_messageB,unsigned char);
+FlashStorage(saved_messageC,unsigned char);
+FlashStorage(saved_messageD,unsigned char);
+FlashStorage(saved_messageE,unsigned char);
+FlashStorage(saved_messageF,unsigned char);
+FlashStorage(saved_messageG,unsigned char);
+FlashStorage(saved_messageH,unsigned char);
 
 FlashStorage(saved_channel1,unsigned char);
 FlashStorage(saved_channel2,unsigned char);
@@ -132,12 +159,17 @@ void setup() {
   welcome();
 
   loadData();
+
+  displayFaderPage();
 }
 
 #define FALSE 0
 #define TRUE 1
 unsigned char channels[4]= {1,1,1,1};
-unsigned char messages[4] = {1,11,71,74};
+// Extra Messages - messages[] size extended to 16 because 4 pages of 4
+unsigned char messages[16] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+// Extra Messages - names for the faders of each page
+unsigned char channelNames[16] = {1,2,3,4,5,6,7,8,'A','B','C','D','E','F','G','H'};
 unsigned char options[4] = {60,1,1,1};
 
 #define NORMAL 0
@@ -315,6 +347,20 @@ void update_all (void)
           delay(100);
           //Save Settings here!!!  <------------------------
         }
+        // Extra Messages - If the message button is briefly pressed, the faderPage should get decremented
+        else if (state == NORMAL)
+        {
+          if (faderPage == 0)
+          {
+            faderPage = MAX_FADER_PAGE;
+          }
+          faderPage -= 1;
+
+          // Extra Messages - Display numbers/letters for current page
+          displayFaderPage();
+
+          saveDataFlag = 1;
+        }
       }
     }
     if(buttonpressed[1] == 1) //button was previously pressed, but now it isn't
@@ -329,6 +375,20 @@ void update_all (void)
           clearLED(); 
           delay(100);
           //Save Settings here!!!  <------------------------
+        }
+        // Extra Messages - If the channel button is briefly pressed, the faderPage should get incremented
+        else if (state == NORMAL)
+        {
+          faderPage += 1;
+          if (faderPage == MAX_FADER_PAGE)
+          {
+            faderPage = 0;
+          }
+
+          // Extra Messages - Display numbers/letters for current page
+          displayFaderPage();
+
+          saveDataFlag = 1;
         }
       }
     }
@@ -352,6 +412,8 @@ void update_all (void)
   //THE POT READING PART
   for (x=0;x<4;x++)
   {
+    // Extra Messages - account for current fader page
+    int actualMessage = (faderPage * 4) + x;
     analogPOTS[x].update();
     if(analogPOTS[x].hasChanged()) {
       potvalues[x]=analogPOTS[x].getValue();
@@ -360,30 +422,31 @@ void update_all (void)
 
       if(state == SET_MESSAGE)
       {
-        messages[x]= map(potvalues[x],0,MAXPOTVALUE,0,129);
-        if(messages[x]>129)
-          messages[x]=129;
+        messages[actualMessage]= map(potvalues[x],0,MAXPOTVALUE,0,129);
+        if(messages[actualMessage]>129)
+          messages[actualMessage]=129;
         //we're in the SET_MESSAGE MODE, so movement of the fader sets a new message
         //display the current value on the LEDs
-        if(messages[x]<=127)  //standard CC
+        if(messages[actualMessage]<=127)  //standard CC
         {
-          LEDchars[0]=charactertoLED(x+1,NUMBER,0);
-          LEDchars[1]=charactertoLED((messages[x]%100)/10,NUMBER,0);
-          LEDchars[2]=charactertoLED(messages[x]/100,NUMBER,0);
-          LEDchars[3]=charactertoLED(messages[x]%10, NUMBER,1);
+          // Extra Messages - Display the message number/letter as the first digit
+          displayFaderName(actualMessage);
+          LEDchars[1]=charactertoLED((messages[actualMessage]%100)/10,NUMBER,0);
+          LEDchars[2]=charactertoLED(messages[actualMessage]/100,NUMBER,0);
+          LEDchars[3]=charactertoLED(messages[actualMessage]%10, NUMBER,1);
         }
-        else if(messages[x]==128) //Pitch Bend
+        else if(messages[actualMessage]==128) //Pitch Bend
         {
-          
-          LEDchars[0]=charactertoLED(x+1,NUMBER,0);
+          // Extra Messages - Display the message number/letter as the first digit
+          displayFaderName(actualMessage);
           LEDchars[1]=charactertoLED('P',LETTER,0);
           LEDchars[2]=charactertoLED(0,RAW,0);
           LEDchars[3]=charactertoLED('B', LETTER,1);
         }
-        else if(messages[x]==129) //Program Change
+        else if(messages[actualMessage]==129) //Program Change
         {
-          
-          LEDchars[0]=charactertoLED(x+1,NUMBER,0);
+          // Extra Messages - Display the message number/letter as the first digit
+          displayFaderName(actualMessage);
           LEDchars[1]=charactertoLED('P',LETTER,0);
           LEDchars[2]=charactertoLED(0,RAW,0);
           LEDchars[3]=charactertoLED('C', LETTER,1);
@@ -429,11 +492,17 @@ void update_all (void)
 
   for (x=0;x<4;x++)
   {
+    // Extra Messages - account for current fader page
+    int actualMessage = (faderPage * 4) + x;
     if(update[x]==TRUE)
     {
       update[x]=FALSE;
       
-      sendMIDI(potvalues[x],channels[x],messages[x],x);
+      // Extra Messages - always use first midi channel. We're over complicating the Midi messages, so why not simplify the channels :)
+      // Notes:
+      //    channels index 0 -> faderPage: set the midi channel on a per page basis
+      //    channels index 0 -> x: set the midi channel on a per fader basis
+      sendMIDI(potvalues[x],channels[0],messages[actualMessage],x);
     }
   }
 }
@@ -441,6 +510,7 @@ bool firstbootread[4]={1,1,1,1};
 unsigned int lastdata[4]={0,0,0,0};
 void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, unsigned char lane)
 {
+  int actualMessage = (faderPage * 4) + lane;
   unsigned char temp;
   if((message >=0) && (message<=127)) //standard midi CC
   {
@@ -472,7 +542,9 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
       Serial.println("");
       */
       lastdata[lane]=temp;
-      LEDchars[0]=charactertoLED('C',LETTER,0);
+      
+      // Extra Messages - Display the message number/letter as the first digit
+      displayFaderName(actualMessage);
       LEDchars[1]=charactertoLED((temp%100)/10,NUMBER,0);
       LEDchars[2]=charactertoLED(temp/100,NUMBER,0);
       LEDchars[3]=charactertoLED(temp%10, NUMBER,0);
@@ -569,6 +641,40 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
 
 
 }
+
+// Extra Messages - Displays the fader numbers/letters for the current page
+void displayFaderPage()
+{
+  clearLED();
+  if (faderPage < 2) 
+  {
+    LEDchars[0]=charactertoLED(channelNames[(faderPage * 4)],NUMBER,0);
+    LEDchars[1]=charactertoLED(channelNames[(faderPage * 4) + 1],NUMBER,0);
+    LEDchars[2]=charactertoLED(channelNames[(faderPage * 4) + 2],NUMBER,0);
+    LEDchars[3]=charactertoLED(channelNames[(faderPage * 4) + 3],NUMBER,0);
+  }
+  else 
+  {
+    LEDchars[0]=charactertoLED(channelNames[(faderPage * 4)],LETTER,0);
+    LEDchars[1]=charactertoLED(channelNames[(faderPage * 4) + 1],LETTER,0);
+    LEDchars[2]=charactertoLED(channelNames[(faderPage * 4) + 2],LETTER,0);
+    LEDchars[3]=charactertoLED(channelNames[(faderPage * 4) + 3],LETTER,0);
+  }
+  delay(100);
+}
+
+void displayFaderName(int messageNum)
+{
+  if (messageNum < 8)
+  {
+    LEDchars[0]=charactertoLED(channelNames[messageNum],NUMBER,0);
+  }
+  else 
+  {
+    LEDchars[0]=charactertoLED(channelNames[messageNum],LETTER,0);
+  }
+}
+
 unsigned char lastoptions[4];
 void updateOptions (void)
 {
@@ -910,6 +1016,22 @@ void loadData (void)
     channels[2]=saved_channel3.read();
     channels[3]=saved_channel4.read();
 
+    // Extra Messages - Load faderPage + 12 additional messages
+    faderPage = saved_fader_page.read();
+
+    messages[4]=saved_message5.read();
+    messages[5]=saved_message6.read();
+    messages[6]=saved_message7.read();
+    messages[7]=saved_message8.read();
+    messages[8]=saved_messageA.read();
+    messages[9]=saved_messageB.read();
+    messages[10]=saved_messageC.read();
+    messages[11]=saved_messageD.read();
+    messages[12]=saved_messageE.read();
+    messages[13]=saved_messageF.read();
+    messages[14]=saved_messageG.read();
+    messages[15]=saved_messageH.read();
+
   }
 
   else  //valid == 0
@@ -943,6 +1065,46 @@ void saveData (void)  //check if the data is the same already so we don't write 
 
   if(saved_message4.read() != messages[3])
     saved_message4.write(messages[3]);  
+
+  // Extra Messages - Save faderPage + 12 additional messages
+  if(saved_fader_page.read() != faderPage)
+    saved_fader_page.write(faderPage);
+
+  if(saved_message5.read() != messages[4])
+    saved_message5.write(messages[4]);
+
+  if(saved_message6.read() != messages[5])
+    saved_message6.write(messages[5]);
+
+  if(saved_message7.read() != messages[6])
+    saved_message7.write(messages[6]);
+
+  if(saved_message8.read() != messages[7])
+    saved_message8.write(messages[7]);  
+
+  if(saved_messageA.read() != messages[8])
+    saved_messageA.write(messages[8]);
+
+  if(saved_messageB.read() != messages[9])
+    saved_messageB.write(messages[9]);
+
+  if(saved_messageC.read() != messages[10])
+    saved_messageC.write(messages[10]);
+
+  if(saved_messageD.read() != messages[11])
+    saved_messageD.write(messages[11]);
+
+  if(saved_messageE.read() != messages[12])
+    saved_messageE.write(messages[12]);  
+
+  if(saved_messageF.read() != messages[13])
+    saved_messageF.write(messages[13]);
+
+  if(saved_messageG.read() != messages[14])
+    saved_messageG.write(messages[14]);
+
+  if(saved_messageH.read() != messages[15])
+    saved_messageH.write(messages[15]);
 
   //channels
   if(saved_channel1.read() != channels[0]) 
