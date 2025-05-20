@@ -54,17 +54,6 @@ unsigned int currentbrightness = 60;
 
 unsigned long int lastLEDUpdate = 0;
 
-// Heart of <<Extra Messages>> // faderPage allows the midi messages of the faders to be stored in "pages"
-// These pages can be scrolled through by tapping the left and right button.
-// Message Button - Decrements page // Channel Button - Increment page
-// Pages are:
-// 1: 1 2 3 4
-// 2: 5 6 7 8
-// 3: A B C D
-// 4: E F G H
-unsigned int faderPage = 0;
-#define MAX_FADER_PAGE 4
-
 #define SMOOTHNESS 0.004
 
 ResponsiveAnalogRead analogPOTS[4] = {
@@ -77,11 +66,16 @@ ResponsiveAnalogRead analogPOTS[4] = {
 FlashStorage(flash_valid, bool);
 FlashStorage(saved_brightness,unsigned char);
 
+// MOD //
+// Midi Channel Configurations - Create storage for midi channel configuration
+FlashStorage(saved_channel_configuration,unsigned char);
+
 FlashStorage(saved_message1,unsigned char);
 FlashStorage(saved_message2,unsigned char);
 FlashStorage(saved_message3,unsigned char);
 FlashStorage(saved_message4,unsigned char);
 
+// MOD //
 // Extra Messages - Create storage for faderPage + 12 additional messages
 FlashStorage(saved_fader_page,unsigned char);
 
@@ -166,11 +160,45 @@ void setup() {
 #define FALSE 0
 #define TRUE 1
 unsigned char channels[4]= {1,1,1,1};
+
+// MOD //
+// Heart of <<Extra Messages>> // Midi messages are stored in 4 scrollable pages:
+//   Page 1 - Channels: 1 2 3 4
+//   Page 2 - Channels: 5 6 7 8
+//   Page 3 - Channels: A B C D
+//   Page 4 - Channels: E F G H
+// 
+// Usage:
+//   Message Button - Decrements page // Channel Button - Increment page
+//   Incrementing on Page 4 leads to Page 1 and decrementing on Page 1 leads to Page 4.
+// Note: Brief presses required as to not interfere with normal Message and Channel usage
+unsigned int faderPage = 0;
+#define MAX_FADER_PAGE 4
+
 // Extra Messages - messages[] size extended to 16 because 4 pages of 4
 unsigned char messages[16] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+
 // Extra Messages - names for the faders of each page
 unsigned char channelNames[16] = {1,2,3,4,5,6,7,8,'A','B','C','D','E','F','G','H'};
-unsigned char options[4] = {60,1,1,1};
+
+// MOD //
+// Options:
+//   0 - Brightness
+//   1 - Midi Channel Configuration
+unsigned char options[4] = {60,0,1,1};
+
+// MOD //
+// Heart of <<Midi Channel Configuration>> // The midi channel can be set using 4 configurations:
+//   SNGL - All messages are sent on the channel set by fader 1
+//   PAGE - Fader 1 sets the midi channel for the first page, fader 2 sets the second page...
+//   FADR - The original implementation: Each fader asigns its own midi channel
+// TODO - 4th option where each of the 16 assignable messages can be assigned individual channel
+//
+// Usage:
+//   Set using Fader 2 in the options menu.
+#define NUM_CHANL_CONFIGS 3
+unsigned char channelConfigurationNames[3][4] = {{'S','N','G','L'},{'P','A','G','E'},{'F','A','D','R'}};
+unsigned int channelConfiguration = 0;
 
 #define NORMAL 0
 #define SET_MESSAGE 1
@@ -264,10 +292,12 @@ void update_all (void)
             //yes, set the state
             state = SET_MESSAGE;
             clearLED();  //we're in the set message mode
-            LEDchars[0]=charactertoLED('E',LETTER,0);
-            LEDchars[1]=charactertoLED('I',LETTER,0);
-            LEDchars[2]=charactertoLED('D',LETTER,0);
-            LEDchars[3]=charactertoLED('T',LETTER,1);
+            // MOD //
+            // Display MESG instead of EDIT because its the message button
+            LEDchars[0]=charactertoLED('M',LETTER,0);
+            LEDchars[1]=charactertoLED('S',LETTER,0);
+            LEDchars[2]=charactertoLED('E',LETTER,0);
+            LEDchars[3]=charactertoLED('G',LETTER,1);
             delay(100);
 
             
@@ -347,6 +377,7 @@ void update_all (void)
           delay(100);
           //Save Settings here!!!  <------------------------
         }
+        // MOD //
         // Extra Messages - If the message button is briefly pressed, the faderPage should get decremented
         else if (state == NORMAL)
         {
@@ -356,7 +387,7 @@ void update_all (void)
           }
           faderPage -= 1;
 
-          // Extra Messages - Display numbers/letters for current page
+          // Display numbers/letters for current page
           displayFaderPage();
 
           saveDataFlag = 1;
@@ -376,6 +407,7 @@ void update_all (void)
           delay(100);
           //Save Settings here!!!  <------------------------
         }
+        // MOD //
         // Extra Messages - If the channel button is briefly pressed, the faderPage should get incremented
         else if (state == NORMAL)
         {
@@ -385,7 +417,7 @@ void update_all (void)
             faderPage = 0;
           }
 
-          // Extra Messages - Display numbers/letters for current page
+          // Display numbers/letters for current page
           displayFaderPage();
 
           saveDataFlag = 1;
@@ -412,6 +444,7 @@ void update_all (void)
   //THE POT READING PART
   for (x=0;x<4;x++)
   {
+    // MOD //
     // Extra Messages - account for current fader page
     int actualMessage = (faderPage * 4) + x;
     analogPOTS[x].update();
@@ -429,6 +462,7 @@ void update_all (void)
         //display the current value on the LEDs
         if(messages[actualMessage]<=127)  //standard CC
         {
+          // MOD //
           // Extra Messages - Display the message number/letter as the first digit
           displayFaderName(actualMessage);
           LEDchars[1]=charactertoLED((messages[actualMessage]%100)/10,NUMBER,0);
@@ -437,6 +471,7 @@ void update_all (void)
         }
         else if(messages[actualMessage]==128) //Pitch Bend
         {
+          // MOD //
           // Extra Messages - Display the message number/letter as the first digit
           displayFaderName(actualMessage);
           LEDchars[1]=charactertoLED('P',LETTER,0);
@@ -445,6 +480,7 @@ void update_all (void)
         }
         else if(messages[actualMessage]==129) //Program Change
         {
+          // MOD //
           // Extra Messages - Display the message number/letter as the first digit
           displayFaderName(actualMessage);
           LEDchars[1]=charactertoLED('P',LETTER,0);
@@ -456,22 +492,27 @@ void update_all (void)
       
       else if(state == SET_CHANNEL)
       {
-        channels[x]= map(potvalues[x],0,MAXPOTVALUE,0,15);
-        if(channels[x]>15)
-          channels[x] = 15;
-        //we're in the SET_CHANNEL MODE, so movement of the fader sets a new message
-        //display the current value on the LEDs
+        // MOD //
+        // Midi Channel Configuration - Don't register changes to channels[1-3] if we are in SNGL mode
+        if (x == 0 || channelConfiguration > 0)
+        {
+          channels[x]= map(potvalues[x],0,MAXPOTVALUE,0,15);
+          if(channels[x]>15)
+            channels[x] = 15;
+          //we're in the SET_CHANNEL MODE, so movement of the fader sets a new message
+          //display the current value on the LEDs
 
-        LEDchars[0]=charactertoLED(x+1,NUMBER,0);
-        LEDchars[1]=charactertoLED(((channels[x]+1)%100)/10,NUMBER,0);
-        LEDchars[2]=charactertoLED(0,RAW,0);
-        LEDchars[3]=charactertoLED((channels[x]+1)%10, NUMBER,0);
-        saveDataFlag = 1;
-
+          LEDchars[0]=charactertoLED(x+1,NUMBER,0);
+          LEDchars[1]=charactertoLED(((channels[x]+1)%100)/10,NUMBER,0);
+          LEDchars[2]=charactertoLED(0,RAW,0);
+          LEDchars[3]=charactertoLED((channels[x]+1)%10, NUMBER,0);
+          saveDataFlag = 1;
+        }
       }
 
       else if(state == SET_OPTIONS)
       {
+        // Brightness settings
         if(x==0)
         {
           
@@ -483,6 +524,23 @@ void update_all (void)
           LEDchars[2]=charactertoLED(0,RAW,0);
           LEDchars[3]=charactertoLED(options[x]%10, NUMBER,0);
         }
+        // MOD //
+        // Midi Channel Configuration settings
+        //   0 = SNGL
+        //   1 = PAGE
+        //   2 = FADR
+        else if(x==1)
+        {
+          // ~Weird Code Note~
+          // Mapped to 0-3 but capped at 2 because this feels nice in practice
+          options[x] = map(potvalues[x],0,MAXPOTVALUE,0,NUM_CHANL_CONFIGS);
+          if(options[x]>2)
+            options[x] = 2;
+          LEDchars[0]=charactertoLED(channelConfigurationNames[options[x]][0],LETTER,0);
+          LEDchars[1]=charactertoLED(channelConfigurationNames[options[x]][2],LETTER,0);
+          LEDchars[2]=charactertoLED(channelConfigurationNames[options[x]][1],LETTER,0);
+          LEDchars[3]=charactertoLED(channelConfigurationNames[options[x]][3],LETTER,0);
+        }
         updateOptions();
         saveDataFlag = 1;
       }
@@ -492,17 +550,33 @@ void update_all (void)
 
   for (x=0;x<4;x++)
   {
+    // MOD //
     // Extra Messages - account for current fader page
     int actualMessage = (faderPage * 4) + x;
+
+    // MOD //
+    // Midi Channel Configuration
+    //   0 - SNGL - Use midi channel set by first fader
+    //   1 - PAGE - Each fader assigns the midi channel on a per page basis
+    //   2 - FADR - Each fader assigns the midi channel on a per fader basis
+    // 
+    // TODO - add 4th option for assignable midi channel for each message on each page
+    // TODODO - explain above functionality better
+    int actualChannel = channels[0];
+    if (channelConfiguration == 1) {
+      int actualChannel = channels[faderPage];
+    }
+    else if (channelConfiguration == 2) {
+      int actualChannel = channels[x];
+    }
+
+    // Send midi updates
     if(update[x]==TRUE)
     {
       update[x]=FALSE;
       
-      // Extra Messages - always use first midi channel. We're over complicating the Midi messages, so why not simplify the channels :)
-      // Notes:
-      //    channels index 0 -> faderPage: set the midi channel on a per page basis
-      //    channels index 0 -> x: set the midi channel on a per fader basis
-      sendMIDI(potvalues[x],channels[0],messages[actualMessage],x);
+      // MOD //
+      sendMIDI(potvalues[x],actualChannel,messages[actualMessage],x);
     }
   }
 }
@@ -510,6 +584,8 @@ bool firstbootread[4]={1,1,1,1};
 unsigned int lastdata[4]={0,0,0,0};
 void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, unsigned char lane)
 {
+  // MOD //
+  // Extra Messages - account for fader page
   int actualMessage = (faderPage * 4) + lane;
   unsigned char temp;
   if((message >=0) && (message<=127)) //standard midi CC
@@ -543,6 +619,7 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
       */
       lastdata[lane]=temp;
       
+      // MOD //
       // Extra Messages - Display the message number/letter as the first digit
       displayFaderName(actualMessage);
       LEDchars[1]=charactertoLED((temp%100)/10,NUMBER,0);
@@ -642,6 +719,7 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
 
 }
 
+// MOD //
 // Extra Messages - Displays the fader numbers/letters for the current page
 void displayFaderPage()
 {
@@ -663,6 +741,8 @@ void displayFaderPage()
   delay(100);
 }
 
+// MOD //
+// Extra Messages - Displays the current fader name one LED 0
 void displayFaderName(int messageNum)
 {
   if (messageNum < 8)
@@ -678,13 +758,20 @@ void displayFaderName(int messageNum)
 unsigned char lastoptions[4];
 void updateOptions (void)
 {
+  // Update brightness
   if(options[0] != lastoptions[0])
-  { //update brightness
+  {
     LEDbrightness = options[0];
     REG_TCC0_CCB0 = LEDbrightness;
     lastoptions[0]=options[0];
   }
-
+  // MOD //
+  //update midi channel configuration
+  if(options[1] != lastoptions[1])
+  {
+    channelConfiguration = options[1];
+    lastoptions[1]=options[1];
+  }
   
 }
 void clearLED (void)
@@ -1006,6 +1093,10 @@ void loadData (void)
     //this is not our first boot, load defaults.
     LEDbrightness = saved_brightness.read();
 
+    // MOD //
+    // Midi Channel Configuration
+    channelConfiguration = saved_channel_configuration.read();
+
     messages[0]=saved_message1.read();
     messages[1]=saved_message2.read();
     messages[2]=saved_message3.read();
@@ -1016,6 +1107,7 @@ void loadData (void)
     channels[2]=saved_channel3.read();
     channels[3]=saved_channel4.read();
 
+    // MOD //
     // Extra Messages - Load faderPage + 12 additional messages
     faderPage = saved_fader_page.read();
 
@@ -1032,6 +1124,7 @@ void loadData (void)
     messages[14]=saved_messageG.read();
     messages[15]=saved_messageH.read();
 
+    
   }
 
   else  //valid == 0
@@ -1049,9 +1142,14 @@ void loadData (void)
 
 void saveData (void)  //check if the data is the same already so we don't write unnecessarily
 {
-  //options
+  //options - brightness
   if(saved_brightness.read() != LEDbrightness)
     saved_brightness.write(LEDbrightness);
+
+  // MOD //
+  //options - midi channel configuration
+  if(saved_channel_configuration.read() != channelConfiguration)
+    saved_channel_configuration.write(channelConfiguration);
 
   //messages
   if(saved_message1.read() != messages[0])
@@ -1066,6 +1164,7 @@ void saveData (void)  //check if the data is the same already so we don't write 
   if(saved_message4.read() != messages[3])
     saved_message4.write(messages[3]);  
 
+  // MOD //
   // Extra Messages - Save faderPage + 12 additional messages
   if(saved_fader_page.read() != faderPage)
     saved_fader_page.write(faderPage);
