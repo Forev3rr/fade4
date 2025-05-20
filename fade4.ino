@@ -292,12 +292,10 @@ void update_all (void)
             //yes, set the state
             state = SET_MESSAGE;
             clearLED();  //we're in the set message mode
-            // MOD //
-            // Display MESG instead of EDIT because its the message button
-            LEDchars[0]=charactertoLED('M',LETTER,0);
-            LEDchars[1]=charactertoLED('S',LETTER,0);
-            LEDchars[2]=charactertoLED('E',LETTER,0);
-            LEDchars[3]=charactertoLED('G',LETTER,1);
+            LEDchars[0]=charactertoLED('E',LETTER,0);
+            LEDchars[1]=charactertoLED('I',LETTER,0);
+            LEDchars[2]=charactertoLED('D',LETTER,0);
+            LEDchars[3]=charactertoLED('T',LETTER,1);
             delay(100);
 
             
