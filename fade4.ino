@@ -163,7 +163,7 @@ void setup() {
 
 #define FALSE 0
 #define TRUE 1
-unsigned char channels[4]= {1,1,1,1};
+unsigned char channels[4] = {0,0,0,0};
 
 // MOD //
 // Heart of <<Extra Messages>> // Midi messages are stored in 4 scrollable pages:
@@ -235,7 +235,7 @@ void loop() {
   static unsigned long lastupdate = 0;
 
 
-  if((millis()-lastupdate) > 20)
+  if((millis() - lastupdate) > 20)
   {
     update_all();
     lastupdate = millis();
@@ -245,7 +245,7 @@ void loop() {
 
   if(fadeout == 1)  //if we're in fadeout mode (==1)
   {
-    if(millis()-fadeouttime > 10)//and 10 ms has elapsed since the last time we did this
+    if(millis() - fadeouttime > 10)//and 10 ms has elapsed since the last time we did this
     {
       fadeouttime = millis(); //catch the new time of the fade loop
       
@@ -261,14 +261,14 @@ void loop() {
 
 
 
-  if((millis()-lastLEDUpdate) > 3000 && (fadeout == 0))
+  if((millis() - lastLEDUpdate) > 3000 && (fadeout == 0))
   {
     //if the LEDs have been on for more than 4 seconds, clear them
     if(state == NORMAL) // if we're in normal operation
     { 
       //clearLED();
-      fadeout=1;
-      fadeouttime=millis();
+      fadeout = 1;
+      fadeouttime = millis();
       currentbrightness = LEDbrightness;
     }
 
@@ -281,7 +281,7 @@ void loop() {
   
   if(saveDataFlag == 1)
   {
-    if(millis()-saveDataTime > 10000)
+    if(millis() - saveDataTime > 10000)
     {
         //only write to eeprom every 10 seconds and only if something has changed
         saveData();
@@ -304,20 +304,20 @@ void update_all (void)
   static unsigned char update[4] = {FALSE,FALSE,FALSE,FALSE};
   static unsigned int buttonpressedtime[3];
   static bool buttonpressed[3];
-  if((digitalRead(SW1) == 0) && (digitalRead(SW2)==1))  //Sw1 is low but sw2 is not
+  if((digitalRead(SW1) == 0) && (digitalRead(SW2) == 1))  //Sw1 is low but sw2 is not
   {
       
-      if(buttonpressed[0]==1 && state != SET_MESSAGE) //it was previously pressed
+      if(buttonpressed[0] == 1 && state != SET_MESSAGE) //it was previously pressed
       {
-          if((millis()-buttonpressedtime[0]) > BUTTONHOLDTIME)  //have we waited long enough?
+          if((millis() - buttonpressedtime[0]) > BUTTONHOLDTIME)  //have we waited long enough?
           {
             //yes, set the state
             state = SET_MESSAGE;
             clearLED();  //we're in the set message mode
-            LEDchars[0]=charactertoLED('E',LETTER,0);
-            LEDchars[1]=charactertoLED('I',LETTER,0);
-            LEDchars[2]=charactertoLED('D',LETTER,0);
-            LEDchars[3]=charactertoLED('T',LETTER,1);
+            LEDchars[0] = charactertoLED('E',LETTER,0);
+            LEDchars[1] = charactertoLED('I',LETTER,0);
+            LEDchars[2] = charactertoLED('D',LETTER,0);
+            LEDchars[3] = charactertoLED('T',LETTER,1);
             delay(100);
 
             
@@ -326,24 +326,24 @@ void update_all (void)
       }
       else if(buttonpressed[0] == 0)  //first time pressed
       {
-        buttonpressedtime[0]= millis(); //save the time it was pressed
-        buttonpressed[0]=1;
+        buttonpressedtime[0] = millis(); //save the time it was pressed
+        buttonpressed[0] = 1;
       }
   }
 
-  else if ((digitalRead(SW1) == 1) && (digitalRead(SW2)==0))  //button two pressed
+  else if ((digitalRead(SW1) == 1) && (digitalRead(SW2) == 0))  //button two pressed
   {
-      if(buttonpressed[1]==1 && state != SET_CHANNEL) //it was previously pressed
+      if(buttonpressed[1] == 1 && state != SET_CHANNEL) //it was previously pressed
       {
-          if((millis()-buttonpressedtime[1]) > BUTTONHOLDTIME)  //have we waited long enough?
+          if((millis() - buttonpressedtime[1]) > BUTTONHOLDTIME)  //have we waited long enough?
           {
             //yes, set the state
             state = SET_CHANNEL;
             clearLED();  //we're in the set message mode
-            LEDchars[0]=charactertoLED('C',LETTER,0);
-            LEDchars[1]=charactertoLED('A',LETTER,0);
-            LEDchars[2]=charactertoLED('H',LETTER,0);
-            LEDchars[3]=charactertoLED('N',LETTER,1);
+            LEDchars[0] = charactertoLED('C',LETTER,0);
+            LEDchars[1] = charactertoLED('A',LETTER,0);
+            LEDchars[2] = charactertoLED('H',LETTER,0);
+            LEDchars[3] = charactertoLED('N',LETTER,1);
             delay(100);
 
             
@@ -352,11 +352,11 @@ void update_all (void)
       }
       else if(buttonpressed[1] == 0)  //first time pressed
       {
-        buttonpressedtime[1]= millis(); //save the time it was pressed
-        buttonpressed[1]=1;
+        buttonpressedtime[1] = millis(); //save the time it was pressed
+        buttonpressed[1] = 1;
       }
   }
-  else if ((digitalRead(SW1) == 0) && (digitalRead(SW2)==0))  //BOTH BUTTONS PRESSED
+  else if ((digitalRead(SW1) == 0) && (digitalRead(SW2) == 0))  //BOTH BUTTONS PRESSED
   {
     if(buttonpressed[2]==1 && state != SET_OPTIONS) //it was previously pressed
       {
@@ -365,10 +365,10 @@ void update_all (void)
             //yes, set the state
             state = SET_OPTIONS;
             clearLED();  //we're in the set message mode
-            LEDchars[0]=charactertoLED('O',LETTER,0);
-            LEDchars[1]=charactertoLED('T',LETTER,0);
-            LEDchars[2]=charactertoLED('P',LETTER,0);
-            LEDchars[3]=charactertoLED('N',LETTER,1);
+            LEDchars[0] = charactertoLED('O',LETTER,0);
+            LEDchars[1] = charactertoLED('T',LETTER,0);
+            LEDchars[2] = charactertoLED('P',LETTER,0);
+            LEDchars[3] = charactertoLED('N',LETTER,1);
             delay(200);
 
             
@@ -377,20 +377,20 @@ void update_all (void)
       }
       else if(buttonpressed[2] == 0)  //first time pressed
       {
-        buttonpressedtime[2]= millis(); //save the time it was pressed
-        buttonpressed[2]=1;
+        buttonpressedtime[2] = millis(); //save the time it was pressed
+        buttonpressed[2] = 1;
       }
   }
 
-  else if((digitalRead(SW1)==1) && (digitalRead(SW2)==1))  //neither button pressed
+  else if((digitalRead(SW1) == 1) && (digitalRead(SW2) == 1))  //neither button pressed
   {
     if(buttonpressed[0] == 1) //button was previously pressed, but now it isn't
     {
       if((millis() - buttonpressedtime[0]) > DEBOUNCETIME)
       {
         //only clear the flag if we're out of the debounce window
-        buttonpressed[0]=0;
-        if(state ==SET_MESSAGE)
+        buttonpressed[0] = 0;
+        if(state == SET_MESSAGE)
         {
           state=NORMAL;
           clearLED(); 
@@ -419,7 +419,7 @@ void update_all (void)
       if((millis() - buttonpressedtime[1]) > DEBOUNCETIME)
       {
         //only clear the flag if we're out of the debounce window
-        buttonpressed[1]=0;
+        buttonpressed[1] = 0;
         if(state == SET_CHANNEL)
         {
           state=NORMAL;
@@ -449,7 +449,7 @@ void update_all (void)
       if((millis() - buttonpressedtime[2]) > DEBOUNCETIME)
       {
         //only clear the flag if we're out of the debounce window
-        buttonpressed[2]=0;
+        buttonpressed[2] = 0;
         if(state == SET_OPTIONS)
         {
           state=NORMAL;
@@ -462,32 +462,32 @@ void update_all (void)
   }
 
   //THE POT READING PART
-  for (x=0;x<4;x++)
+  for (x = 0; x < 4; x++)
   {
     // MOD //
     // Extra Messages - account for current fader page
     unsigned int actualMessage = (faderPage * 4) + x;
     analogPOTS[x].update();
     if(analogPOTS[x].hasChanged()) {
-      potvalues[x]=analogPOTS[x].getValue();
-      if(state==NORMAL)
-        update[x]=TRUE;
+      potvalues[x] = analogPOTS[x].getValue();
+      if(state == NORMAL)
+        update[x] = TRUE;
 
-      if(state == SET_MESSAGE)
+      else if(state == SET_MESSAGE)
       {
-        messages[actualMessage]= map(potvalues[x],0,MAXPOTVALUE,0,129);
-        if(messages[actualMessage]>129)
-          messages[actualMessage]=129;
+        messages[actualMessage] = map(potvalues[x],0,MAXPOTVALUE,0,129);
+        if(messages[actualMessage] > 129)
+          messages[actualMessage] = 129;
         //we're in the SET_MESSAGE MODE, so movement of the fader sets a new message
         //display the current value on the LEDs
-        if(messages[actualMessage]<=127)  //standard CC
+        if(messages[actualMessage] <= 127)  //standard CC
         {
           // MOD //
           // Extra Messages - Display the message number/letter as the first digit
           displayFaderName(actualMessage);
           displayDigits(messages[actualMessage]);
         }
-        else if(messages[actualMessage]==128) //Pitch Bend
+        else if(messages[actualMessage] == 128) //Pitch Bend
         {
           // MOD //
           // Extra Messages - Display the message number/letter as the first digit
@@ -496,7 +496,7 @@ void update_all (void)
           LEDchars[2]=charactertoLED(0,RAW,0);
           LEDchars[3]=charactertoLED('B', LETTER,1);
         }
-        else if(messages[actualMessage]==129) //Program Change
+        else if(messages[actualMessage] == 129) //Program Change
         {
           // MOD //
           // Extra Messages - Display the message number/letter as the first digit
@@ -514,14 +514,14 @@ void update_all (void)
         // Midi Channel Configuration - Don't register changes to channels[1-3] if we are in SNGL mode
         if (x == 0 || channelConfiguration > 0)
         {
-          channels[x]= map(potvalues[x],0,MAXPOTVALUE,0,15);
-          if(channels[x]>15)
+          channels[x] = map(potvalues[x],0,MAXPOTVALUE,0,15);
+          if(channels[x] > 15)
             channels[x] = 15;
           //we're in the SET_CHANNEL MODE, so movement of the fader sets a new message
           //display the current value on the LEDs
 
-          LEDchars[0]=charactertoLED(x+1,NUMBER,0);
-          displayDigits(channels[x]+1);
+          LEDchars[0]=charactertoLED(x + 1,NUMBER,0);
+          displayDigits(channels[x] + 1);
           saveDataFlag = 1;
         }
       }
@@ -529,13 +529,13 @@ void update_all (void)
       else if(state == SET_OPTIONS)
       {
         // Brightness settings
-        if(x==0)
+        if(x == 0)
         {
           
-          options[x]= map(potvalues[x],0,MAXPOTVALUE,10,99);
-          if(options[x]>99)
+          options[x] = map(potvalues[x],0,MAXPOTVALUE,10,99);
+          if(options[x] > 99)
             options[x] = 99;
-          LEDchars[0]=charactertoLED('B',LETTER,0);
+          LEDchars[0] = charactertoLED('B',LETTER,0);
           displayDigits(options[x]);
         }
         // MOD //
@@ -543,26 +543,26 @@ void update_all (void)
         //   0 = SNGL
         //   1 = PAGE
         //   2 = FADR
-        else if(x==1)
+        else if(x == 1)
         {
           // ~Weird Code Note~
           // Mapped to 0-3 but capped at 2 because this feels nice in practice
           options[x] = map(potvalues[x],0,MAXPOTVALUE,0,NUM_CHANL_CONFIGS);
-          if(options[x]>2)
+          if(options[x] > 2)
             options[x] = 2;
-          LEDchars[0]=charactertoLED(channelConfigurationNames[options[x]][0],LETTER,0);
-          LEDchars[1]=charactertoLED(channelConfigurationNames[options[x]][2],LETTER,0);
-          LEDchars[2]=charactertoLED(channelConfigurationNames[options[x]][1],LETTER,0);
-          LEDchars[3]=charactertoLED(channelConfigurationNames[options[x]][3],LETTER,0);
+          LEDchars[0] = charactertoLED(channelConfigurationNames[options[x]][0],LETTER,0);
+          LEDchars[1] = charactertoLED(channelConfigurationNames[options[x]][2],LETTER,0);
+          LEDchars[2] = charactertoLED(channelConfigurationNames[options[x]][1],LETTER,0);
+          LEDchars[3] = charactertoLED(channelConfigurationNames[options[x]][3],LETTER,0);
         }
         // MOD //
         // Midi Slew Rate
-        else if(x==3)
+        else if(x == 3)
         {
           options[x] = map(potvalues[x],0,MAXPOTVALUE,0,102);
-          if(options[x]>100)
+          if(options[x] > 100)
             options[x] = 888;
-          LEDchars[0]=charactertoLED('S',LETTER,0);
+          LEDchars[0] = charactertoLED('S',LETTER,0);
           displayDigits(options[x]);
         }
         updateOptions();
@@ -572,7 +572,7 @@ void update_all (void)
     }
   }
 
-  for (x=0;x<4;x++)
+  for (x = 0; x < 4; x++)
   {
     // MOD //
     // Extra Messages - account for current fader page
@@ -595,16 +595,16 @@ void update_all (void)
     }
 
     // Send midi updates
-    if(update[x]==TRUE)
+    if(update[x] == TRUE)
     {
-      update[x]=FALSE;
+      update[x] = FALSE;
       
       // MOD //
       sendMIDI(potvalues[x],actualChannel,messages[actualMessage],x);
     }
   }
 }
-bool firstbootread[4]={1,1,1,1};
+bool firstbootread[16]={1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 unsigned int lastdata[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, unsigned char lane)
 {
@@ -612,20 +612,20 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
   // Extra Messages - account for fader page
   unsigned int actualMessage = (faderPage * 4) + lane;
   unsigned char temp;
-  if((message >=0) && (message<=127)) //standard midi CC
+  if((message >= 0) && (message <= 127)) //standard midi CC
   {
     //data = constrain(data,25,1010);
     //temp=map(data,25,1010,0,127);
     //temp = constrain(data,0,MAXPOTVALUE);
-    temp = map(data,0,MAXPOTVALUE, 0, 127);
-    if(temp>127)
+    temp = map(data,0,MAXPOTVALUE,0,127);
+    if(temp > 127)
       temp = 127;
     if(firstbootread[actualMessage])
     {
-      lastdata[actualMessage]=temp;
-      firstbootread[actualMessage]=0;
+      lastdata[actualMessage] = temp;
+      firstbootread[actualMessage] = 0;
     }
-    if(temp!=lastdata[actualMessage])
+    if(temp != lastdata[actualMessage])
     {
       //create midi message here
       /*
@@ -657,7 +657,7 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
           slewTheMidi(channel, message, lastdata[actualMessage], temp, actualMessage);
         }
       }
-      lastdata[actualMessage]=temp;
+      lastdata[actualMessage] = temp;
       
       // MOD //
       // Extra Messages - Display the message number/letter as the first digit
@@ -684,12 +684,12 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
 
     if(firstbootread[lane])
     {
-      lastdata[lane]=pbval;
-      firstbootread[lane]=0;
+      lastdata[lane] = pbval;
+      firstbootread[lane] = 0;
     }
-    if(pbval!=lastdata[lane])
+    if(pbval != lastdata[lane])
     {
-      lastdata[lane]=pbval;
+      lastdata[lane] = pbval;
       
       //maps pitch bend to -2047 to 2047
       pbval = map(pbval,0,MAXPOTVALUE,-2047,2047); // - 2047 to +2047
@@ -713,33 +713,33 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
       
       
       LEDchars[0]=charactertoLED('B',LETTER,0);
-      LEDchars[1]=charactertoLED((data%256)/16,HEX,0);
-      LEDchars[2]=charactertoLED(data/256,HEX,0);
-      LEDchars[3]=charactertoLED(data%16, HEX,0);
+      LEDchars[1]=charactertoLED((data % 256) / 16,HEX,0);
+      LEDchars[2]=charactertoLED(data / 256,HEX,0);
+      LEDchars[3]=charactertoLED(data % 16, HEX,0);
     }
   }
   
   else if(message == 129) //Program Change
   {
     temp = map(data,0,MAXPOTVALUE, 0, 127);
-    if(temp>127)
+    if(temp > 127)
       temp = 127;
 
 
     if(firstbootread[lane])
     {
-      lastdata[lane]=temp;
-      firstbootread[lane]=0;
+      lastdata[lane] = temp;
+      firstbootread[lane] = 0;
     }
-    if(temp!=lastdata[lane])
+    if(temp != lastdata[lane])
     {
-      lastdata[lane]=temp;
+      lastdata[lane] = temp;
       MIDI.sendProgramChange(temp,channel+1);
       midiEventPacket_t event = {0x0C, (uint8_t)(0xC0 | channel), (uint8_t)(temp)};
       MidiUSB.sendMIDI(event);
       MidiUSB.flush();
   
-      LEDchars[0]=charactertoLED('P',LETTER,0);
+      LEDchars[0] = charactertoLED('P',LETTER,0);
       displayDigits(temp);
     }
   }
@@ -863,27 +863,27 @@ void updateOptions (void)
 void displayDigits(unsigned int digits)
 {
   // The 10s
-  if (digits/100 == 0 && (digits%100)/10 == 0)
+  if (digits / 100 == 0 && (digits % 100) / 10 == 0)
   {
-    LEDchars[1]=0;
+    LEDchars[1] = 0;
   }
   else
   {
-    LEDchars[1]=charactertoLED((digits%100)/10,NUMBER,0);
+    LEDchars[1] = charactertoLED((digits % 100) / 10,NUMBER,0);
   }
 
   // The 100s
-  if (digits/100 > 0)
+  if (digits / 100 > 0)
   {
-    LEDchars[2]=charactertoLED(digits/100,NUMBER,0);
+    LEDchars[2] = charactertoLED(digits / 100,NUMBER,0);
   }
   else
   {
-    LEDchars[2]=0;
+    LEDchars[2] = 0;
   }
 
   // The 1s
-  LEDchars[3]=charactertoLED(digits%10, NUMBER,0);
+  LEDchars[3] = charactertoLED(digits % 10, NUMBER,0);
 }
 
 void clearLED (void)
@@ -904,7 +904,7 @@ void printLED (char digit)
   PORT->Group[g_APinDescription[DIGIT3].ulPort].PINCFG[g_APinDescription[DIGIT3].ulPin].bit.PMUXEN = 0;
   PORT->Group[g_APinDescription[DIGIT4].ulPort].PINCFG[g_APinDescription[DIGIT4].ulPin].bit.PMUXEN = 0;
   
-  for(x=0;x<8;x++)
+  for(x = 0; x < 8; x++)
   {
     if(((0x01 << x) & (LEDchars[digit])))
       digitalWrite(segments[x],HIGH);
@@ -969,26 +969,26 @@ unsigned char charactertoLED(unsigned char data, unsigned char type, bool decima
   switch (type){
 
     case NUMBER:
-      if((data>=0) && (data<= 9))
+      if((data >= 0) && (data <= 9))
       {
-        if(decimal ==0)
+        if(decimal == 0)
           return numbers[data];
         else
           return (numbers[data]|B10000000);
       }
       break;
     case LETTER:
-      if(data>='A' && (data<='Z'))
-        return letters[(data-'A')];
+      if(data >= 'A' && (data <= 'Z'))
+        return letters[(data - 'A')];
       break;
     case RAW:
       return data;
       break;
     case HEX:
     {
-      if((data>=0) && (data <=15))  //range 0-15 for a hex digit
+      if((data >= 0) && (data <= 15))  //range 0-15 for a hex digit
       {
-        if(data<10)
+        if(data < 10)
         {
           if(decimal == 0)
             return numbers[data];
@@ -998,9 +998,9 @@ unsigned char charactertoLED(unsigned char data, unsigned char type, bool decima
         else
         {
           if(decimal == 0)
-            return letters[data-10];
+            return letters[data - 10];
           else
-            return letters[data-10]|B10000000;
+            return letters[data - 10]|B10000000;
         }
       }
     }
@@ -1214,32 +1214,32 @@ void loadData (void)
     // Midi Slew
     midiSlew = saved_midi_slew.read();
 
-    messages[0]=saved_message1.read();
-    messages[1]=saved_message2.read();
-    messages[2]=saved_message3.read();
-    messages[3]=saved_message4.read();
+    messages[0] = saved_message1.read();
+    messages[1] = saved_message2.read();
+    messages[2] = saved_message3.read();
+    messages[3] = saved_message4.read();
 
-    channels[0]=saved_channel1.read();
-    channels[1]=saved_channel2.read();
-    channels[2]=saved_channel3.read();
-    channels[3]=saved_channel4.read();
+    channels[0] = saved_channel1.read();
+    channels[1] = saved_channel2.read();
+    channels[2] = saved_channel3.read();
+    channels[3] = saved_channel4.read();
 
     // MOD //
     // Extra Messages - Load faderPage + 12 additional messages
     faderPage = saved_fader_page.read();
 
-    messages[4]=saved_message5.read();
-    messages[5]=saved_message6.read();
-    messages[6]=saved_message7.read();
-    messages[7]=saved_message8.read();
-    messages[8]=saved_messageA.read();
-    messages[9]=saved_messageB.read();
-    messages[10]=saved_messageC.read();
-    messages[11]=saved_messageD.read();
-    messages[12]=saved_messageE.read();
-    messages[13]=saved_messageF.read();
-    messages[14]=saved_messageG.read();
-    messages[15]=saved_messageH.read();
+    messages[4] = saved_message5.read();
+    messages[5] = saved_message6.read();
+    messages[6] = saved_message7.read();
+    messages[7] = saved_message8.read();
+    messages[8] = saved_messageA.read();
+    messages[9] = saved_messageB.read();
+    messages[10] = saved_messageC.read();
+    messages[11] = saved_messageD.read();
+    messages[12] = saved_messageE.read();
+    messages[13] = saved_messageF.read();
+    messages[14] = saved_messageG.read();
+    messages[15] = saved_messageH.read();
 
     
   }
