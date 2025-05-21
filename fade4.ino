@@ -70,6 +70,10 @@ FlashStorage(saved_brightness,unsigned char);
 // Midi Channel Configurations - Create storage for midi channel configuration
 FlashStorage(saved_channel_configuration,unsigned char);
 
+// MOD //
+// Midi Slew Rate - Create storage for midi slew rate
+FlashStorage(saved_midi_slew,unsigned char);
+
 FlashStorage(saved_message1,unsigned char);
 FlashStorage(saved_message2,unsigned char);
 FlashStorage(saved_message3,unsigned char);
@@ -171,7 +175,9 @@ unsigned char channels[4]= {1,1,1,1};
 // Usage:
 //   Message Button - Decrements page // Channel Button - Increment page
 //   Incrementing on Page 4 leads to Page 1 and decrementing on Page 1 leads to Page 4.
-// Note: Brief presses required as to not interfere with normal Message and Channel usage
+// 
+// Note:
+//   Brief presses required as to not interfere with normal Message and Channel usage
 unsigned int faderPage = 0;
 #define MAX_FADER_PAGE 4
 
@@ -185,7 +191,8 @@ unsigned char channelNames[16] = {1,2,3,4,5,6,7,8,'A','B','C','D','E','F','G','H
 // Options:
 //   0 - Brightness
 //   1 - Midi Channel Configuration
-unsigned char options[4] = {60,0,1,1};
+//   3 - Midi Slew
+unsigned int options[4] = {60,0,1,0};
 
 // MOD //
 // Heart of <<Midi Channel Configuration>> // The midi channel can be set using 4 configurations:
@@ -199,6 +206,21 @@ unsigned char options[4] = {60,0,1,1};
 #define NUM_CHANL_CONFIGS 3
 unsigned char channelConfigurationNames[3][4] = {{'S','N','G','L'},{'P','A','G','E'},{'F','A','D','R'}};
 unsigned int channelConfiguration = 0;
+
+// MOD //
+// Heart of <<Midi Slew>> // Limit the speed at which midi messages can jump.
+//   0 - No slew results in midi cc values being able to jump from 0-127 instantaneously
+//   50 - Midi cc values are limited to 127 values per 2.5 seconds
+//   100 - Midi cc values are limiter to 127 calues per 10 seconds
+//   888 - No jumping, fader must catch up to the message currently being output
+//
+// Usage:
+//   Set using Fader 4 in the options menu.
+//
+// Note:
+//   Currently using a basic expenential curve, but could probably be refined by someone more math
+//   savy (or someone with a sick TI-84). Ideally 1s would be at the halfway point.
+unsigned int midiSlew = 0;
 
 #define NORMAL 0
 #define SET_MESSAGE 1
@@ -444,7 +466,7 @@ void update_all (void)
   {
     // MOD //
     // Extra Messages - account for current fader page
-    int actualMessage = (faderPage * 4) + x;
+    unsigned int actualMessage = (faderPage * 4) + x;
     analogPOTS[x].update();
     if(analogPOTS[x].hasChanged()) {
       potvalues[x]=analogPOTS[x].getValue();
@@ -463,9 +485,7 @@ void update_all (void)
           // MOD //
           // Extra Messages - Display the message number/letter as the first digit
           displayFaderName(actualMessage);
-          LEDchars[1]=charactertoLED((messages[actualMessage]%100)/10,NUMBER,0);
-          LEDchars[2]=charactertoLED(messages[actualMessage]/100,NUMBER,0);
-          LEDchars[3]=charactertoLED(messages[actualMessage]%10, NUMBER,1);
+          displayDigits(messages[actualMessage]);
         }
         else if(messages[actualMessage]==128) //Pitch Bend
         {
@@ -501,9 +521,7 @@ void update_all (void)
           //display the current value on the LEDs
 
           LEDchars[0]=charactertoLED(x+1,NUMBER,0);
-          LEDchars[1]=charactertoLED(((channels[x]+1)%100)/10,NUMBER,0);
-          LEDchars[2]=charactertoLED(0,RAW,0);
-          LEDchars[3]=charactertoLED((channels[x]+1)%10, NUMBER,0);
+          displayDigits(channels[x]+1);
           saveDataFlag = 1;
         }
       }
@@ -518,9 +536,7 @@ void update_all (void)
           if(options[x]>99)
             options[x] = 99;
           LEDchars[0]=charactertoLED('B',LETTER,0);
-          LEDchars[1]=charactertoLED((options[x]%100)/10,NUMBER,0);
-          LEDchars[2]=charactertoLED(0,RAW,0);
-          LEDchars[3]=charactertoLED(options[x]%10, NUMBER,0);
+          displayDigits(options[x]);
         }
         // MOD //
         // Midi Channel Configuration settings
@@ -538,6 +554,16 @@ void update_all (void)
           LEDchars[1]=charactertoLED(channelConfigurationNames[options[x]][2],LETTER,0);
           LEDchars[2]=charactertoLED(channelConfigurationNames[options[x]][1],LETTER,0);
           LEDchars[3]=charactertoLED(channelConfigurationNames[options[x]][3],LETTER,0);
+        }
+        // MOD //
+        // Midi Slew Rate
+        else if(x==3)
+        {
+          options[x] = map(potvalues[x],0,MAXPOTVALUE,0,102);
+          if(options[x]>100)
+            options[x] = 888;
+          LEDchars[0]=charactertoLED('S',LETTER,0);
+          displayDigits(options[x]);
         }
         updateOptions();
         saveDataFlag = 1;
@@ -579,12 +605,12 @@ void update_all (void)
   }
 }
 bool firstbootread[4]={1,1,1,1};
-unsigned int lastdata[4]={0,0,0,0};
+unsigned int lastdata[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, unsigned char lane)
 {
   // MOD //
   // Extra Messages - account for fader page
-  int actualMessage = (faderPage * 4) + lane;
+  unsigned int actualMessage = (faderPage * 4) + lane;
   unsigned char temp;
   if((message >=0) && (message<=127)) //standard midi CC
   {
@@ -594,12 +620,12 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
     temp = map(data,0,MAXPOTVALUE, 0, 127);
     if(temp>127)
       temp = 127;
-    if(firstbootread[lane])
+    if(firstbootread[actualMessage])
     {
-      lastdata[lane]=temp;
-      firstbootread[lane]=0;
+      lastdata[actualMessage]=temp;
+      firstbootread[actualMessage]=0;
     }
-    if(temp!=lastdata[lane])
+    if(temp!=lastdata[actualMessage])
     {
       //create midi message here
       /*
@@ -615,21 +641,33 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
       Serial.println(data);
       Serial.println("");
       */
-      lastdata[lane]=temp;
+      
+      // MOD //
+      // Midi Slew // This is where we slew or wait for the midi value to catch up with the previous one.
+      if (difference(lastdata[actualMessage], temp) > 1)
+      {
+        if (midiSlew == 888)
+        {
+          // Display current value and the do nothing. Slider must catch up first
+          displayDigits(lastdata[actualMessage]);
+          return;
+        }
+        if (midiSlew > 0)
+        {
+          slewTheMidi(channel, message, lastdata[actualMessage], temp, actualMessage);
+        }
+      }
+      lastdata[actualMessage]=temp;
       
       // MOD //
       // Extra Messages - Display the message number/letter as the first digit
       displayFaderName(actualMessage);
-      LEDchars[1]=charactertoLED((temp%100)/10,NUMBER,0);
-      LEDchars[2]=charactertoLED(temp/100,NUMBER,0);
-      LEDchars[3]=charactertoLED(temp%10, NUMBER,0);
+      displayDigits(temp);
 
-      
-
-        MIDI.sendControlChange(message, temp, channel+1);
-        midiEventPacket_t event = {0x0B, (uint8_t)(0xB0 | channel), message, temp};
-        MidiUSB.sendMIDI(event);
-        MidiUSB.flush();
+      MIDI.sendControlChange(message, temp, channel+1);
+      midiEventPacket_t event = {0x0B, (uint8_t)(0xB0 | channel), message, temp};
+      MidiUSB.sendMIDI(event);
+      MidiUSB.flush();
 
     }    
     else
@@ -701,12 +739,8 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
       MidiUSB.sendMIDI(event);
       MidiUSB.flush();
   
-       
-  
       LEDchars[0]=charactertoLED('P',LETTER,0);
-      LEDchars[1]=charactertoLED((temp%100)/10,NUMBER,0);
-      LEDchars[2]=charactertoLED(temp/100,NUMBER,0);
-      LEDchars[3]=charactertoLED(temp%10, NUMBER,0);
+      displayDigits(temp);
     }
   }
   
@@ -715,6 +749,48 @@ void sendMIDI (unsigned int data, unsigned char channel, unsigned char message, 
     //invalid message type
 
 
+}
+
+// MOD //
+// Midi Slew - This is where the slew is cooked
+// TODO: Refactor so that slew doesn't lock down the device and can be interrupted
+void slewTheMidi(unsigned char channel, unsigned char message, unsigned int current, unsigned int target, unsigned int actualMessage)
+{
+  // Calculate the slew time in ms (exponential from 0-5s)
+  // Could calculate this elsewhere, but can't be assed
+  unsigned int baseSlewTime = (midiSlew * midiSlew) * 0.5;
+  unsigned int timePerMessageDelta = baseSlewTime/100;
+
+  
+  displayFaderName(actualMessage);
+
+  // Figure out our head from our ass
+  if (current > target)
+  {
+    // Decrementally update the message
+    for (unsigned int i = current; i > target; i--)
+    {
+      MIDI.sendControlChange(message, i, channel+1);
+      midiEventPacket_t event = {0x0B, (uint8_t)(0xB0 | channel), message, i};
+      MidiUSB.sendMIDI(event);
+      MidiUSB.flush();
+      displayDigits(i);
+      delay(timePerMessageDelta);
+    }
+  }
+  else
+  {
+    // Incrementally update the message
+    for (unsigned int i = current; i < target; i++)
+    {
+      MIDI.sendControlChange(message, i, channel+1);
+      midiEventPacket_t event = {0x0B, (uint8_t)(0xB0 | channel), message, i};
+      MidiUSB.sendMIDI(event);
+      MidiUSB.flush();
+      displayDigits(i);
+      delay(timePerMessageDelta);
+    }
+  }
 }
 
 // MOD //
@@ -741,7 +817,7 @@ void displayFaderPage()
 
 // MOD //
 // Extra Messages - Displays the current fader name one LED 0
-void displayFaderName(int messageNum)
+void displayFaderName(unsigned int messageNum)
 {
   if (messageNum < 8)
   {
@@ -753,25 +829,63 @@ void displayFaderName(int messageNum)
   }
 }
 
-unsigned char lastoptions[4];
+// MOD //
+// Removing lastoptions because it seems pointless
+//unsigned char lastoptions[4];
 void updateOptions (void)
 {
   // Update brightness
-  if(options[0] != lastoptions[0])
+  if(options[0] != LEDbrightness)
   {
     LEDbrightness = options[0];
     REG_TCC0_CCB0 = LEDbrightness;
-    lastoptions[0]=options[0];
+    //lastoptions[0]=options[0];
   }
   // MOD //
   //update midi channel configuration
-  if(options[1] != lastoptions[1])
+  if(options[1] != channelConfiguration)
   {
     channelConfiguration = options[1];
-    lastoptions[1]=options[1];
+    //lastoptions[1]=options[1];
+  }
+  // MOD //
+  //update midi channel configuration
+  if(options[3] != midiSlew)
+  {
+    midiSlew = options[3];
+    //lastoptions[3]=options[3];
   }
   
 }
+
+// MOD //
+// Display up to 3 digits on LEDs 1, 2, and 3
+void displayDigits(unsigned int digits)
+{
+  // The 10s
+  if (digits/100 == 0 && (digits%100)/10 == 0)
+  {
+    LEDchars[1]=0;
+  }
+  else
+  {
+    LEDchars[1]=charactertoLED((digits%100)/10,NUMBER,0);
+  }
+
+  // The 100s
+  if (digits/100 > 0)
+  {
+    LEDchars[2]=charactertoLED(digits/100,NUMBER,0);
+  }
+  else
+  {
+    LEDchars[2]=0;
+  }
+
+  // The 1s
+  LEDchars[3]=charactertoLED(digits%10, NUMBER,0);
+}
+
 void clearLED (void)
 {
   LEDchars[0] = 0;
@@ -779,6 +893,7 @@ void clearLED (void)
   LEDchars[2] = 0;
   LEDchars[3] = 0;
 }
+
 void printLED (char digit)
 {
   char x;
@@ -1095,6 +1210,10 @@ void loadData (void)
     // Midi Channel Configuration
     channelConfiguration = saved_channel_configuration.read();
 
+    // MOD //
+    // Midi Slew
+    midiSlew = saved_midi_slew.read();
+
     messages[0]=saved_message1.read();
     messages[1]=saved_message2.read();
     messages[2]=saved_message3.read();
@@ -1140,14 +1259,19 @@ void loadData (void)
 
 void saveData (void)  //check if the data is the same already so we don't write unnecessarily
 {
-  //options - brightness
+  //options - Brightness
   if(saved_brightness.read() != LEDbrightness)
     saved_brightness.write(LEDbrightness);
 
   // MOD //
-  //options - midi channel configuration
+  //options - Midi Channel Configuration
   if(saved_channel_configuration.read() != channelConfiguration)
     saved_channel_configuration.write(channelConfiguration);
+
+  // MOD //
+  //options - Midi Slew
+  if(saved_midi_slew.read() != midiSlew)
+    saved_midi_slew.write(midiSlew);
 
   //messages
   if(saved_message1.read() != messages[0])
@@ -1234,4 +1358,19 @@ void restorebrightness (void)
     currentbrightness = LEDbrightness;
   }
   fadeout = 0;
+}
+
+// MOD //
+// This is probably already a function in a library somewhere...
+// ...but quicker to implement myself than to dust off my magnifying glass.
+unsigned int difference(unsigned int i, unsigned int j)
+{
+  if (i > j)
+  {
+    return i - j;
+  }
+  else
+  {
+    return j - i;
+  }
 }
